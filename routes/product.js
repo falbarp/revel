@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const { check } = require('express-validator');
-const { authenticateUser, authorizeUser } = require('../middlewares/auth');
 const { validateFields } = require('../middlewares/validate-fields');
+const { authenticateUser, authorizeUser } = require('../middlewares/auth');
 const { 
     productGet, 
     productGetById, 

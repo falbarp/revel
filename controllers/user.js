@@ -27,7 +27,6 @@ const userRolePut = async (req, res = response) => {
           res.status(404).json({ error: 'User not found' });
           return;
         }
-
     
         user.role = role;
         await user.save();
