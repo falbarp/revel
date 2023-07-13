@@ -1,14 +1,41 @@
 const { Router } = require('express');
-const { productGet, productDelete, productPut, productPost } = require('../controllers/product');
+const { check } = require('express-validator');
+const { authenticateUser } = require('../middlewares/auth');
+const { validateFields } = require('../middlewares/validate-fields');
+const { 
+    productGet, 
+    productGetById, 
+    productDelete,
+    productPut, 
+    productPost 
+    } = require('../controllers/product');
 
 const router = Router();
 
-router.get('/', productGet);
+router.get('/',[
+    authenticateUser
+], productGet);
 
-router.put('/', productPut);
+router.get('/:productId',[
+    authenticateUser
+], productGetById);
 
-router.post('/', productPost);
 
-router.delete('/', productDelete);
+router.put('/:productId',[
+    authenticateUser
+], productPut);
+
+router.post('/', [
+    check('name', 'Name is required').not().isEmpty(),
+    check('description', 'Description is required').not().isEmpty(),
+    check('category', 'Category is required').not().isEmpty(),
+    check('price', 'A valid price is required').isNumeric(),
+    validateFields,
+    authenticateUser
+], productPost);
+
+router.delete('/:productId', [
+    authenticateUser
+], productDelete);
 
 module.exports = router;
