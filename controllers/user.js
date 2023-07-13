@@ -17,6 +17,29 @@ const userPut = (req, res = response) => {
 }
 
 
+const userRolePut = async (req, res = response) => {
+    try {
+        const userId = req.params.userId;
+        const { role } = req.body;
+    
+        const user = await User.findById(userId);
+        if (!user) {
+          res.status(404).json({ error: 'User not found' });
+          return;
+        }
+
+    
+        user.role = role;
+        await user.save();
+    
+        res.status(200).json({ message: 'Role updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error updating role' });
+    }
+ 
+}
+
+
 const userDelete = async (req, res = response) => {
     try {
         await User.findByIdAndDelete(req.params.userId);
@@ -29,5 +52,6 @@ const userDelete = async (req, res = response) => {
 module.exports = {
     userGet,
     userPut,
+    userRolePut,
     userDelete
 }
