@@ -7,7 +7,8 @@ const {
     productGetById, 
     productDelete,
     productPut, 
-    productPost 
+    productPost,
+    productSearch 
     } = require('../controllers/product');
 
 const router = Router();
@@ -15,6 +16,10 @@ const router = Router();
 router.get('/',[
     authenticateUser
 ], productGet);
+
+router.get('/search',[
+    authenticateUser
+], productSearch);
 
 router.get('/:productId',[
     authenticateUser
@@ -37,5 +42,7 @@ router.post('/', [
 router.delete('/:productId', [
     authenticateUser
 ], productDelete);
+
+
 
 module.exports = router;

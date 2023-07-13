@@ -65,10 +65,41 @@ const productDelete = async (req, res = response) => {
       }
 }
 
+const productSearch = async (req, res = response) => {
+
+  try {
+    const { name, description, category, price } = req.query;
+    const query = {};
+
+    if (name) {
+      query.name = { $regex: name, $options: 'i' };
+    }
+
+    if (description) {
+      query.description = { $regex: description, $options: 'i' };
+    }
+
+    if (category) {
+      query.category = category;
+    }
+
+    if (price) {
+      query.price = { $lte: price };
+    }
+
+    const products = await Product.find(query);
+    res.status(200).json({ products });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al buscar productos' });
+  }
+  
+}
+
 module.exports = {
     productGet,
     productGetById,
     productPut,
     productPost,
-    productDelete
+    productDelete,
+    productSearch
 }
