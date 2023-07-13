@@ -1,6 +1,6 @@
 const { Router } = require('express');
 const { check } = require('express-validator');
-const { authenticateUser } = require('../middlewares/auth');
+const { authenticateUser, authorizeUser } = require('../middlewares/auth');
 const { validateFields } = require('../middlewares/validate-fields');
 const { 
     productGet, 
@@ -27,7 +27,9 @@ router.get('/:productId',[
 
 
 router.put('/:productId',[
-    authenticateUser
+    authenticateUser,
+    authorizeUser('admin')
+
 ], productPut);
 
 router.post('/', [
@@ -40,7 +42,8 @@ router.post('/', [
 ], productPost);
 
 router.delete('/:productId', [
-    authenticateUser
+    authenticateUser,
+    authorizeUser('admin')
 ], productDelete);
 
 

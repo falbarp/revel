@@ -16,7 +16,7 @@ const authenticateUser = (req, res, next) => {
     const user = req.userData; 
 
     if (user.role !== requiredRole) {
-      res.status(403).json({ error: 'No tienes permiso para acceder a esta ruta' });
+      res.status(403).json({ error: 'Not authorized' });
       return;
     }
 
