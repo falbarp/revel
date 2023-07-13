@@ -90,9 +90,9 @@ const productSearch = async (req, res = response) => {
     const products = await Product.find(query);
     res.status(200).json({ products });
   } catch (error) {
-    res.status(500).json({ error: 'Error al buscar productos' });
+    res.status(500).json({ error: 'Error getting products' });
   }
-  
+
 }
 
 module.exports = {

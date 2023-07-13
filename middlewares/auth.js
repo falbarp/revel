@@ -12,11 +12,15 @@ const authenticateUser = (req, res, next) => {
   };
 
   const authorizeUser = (requiredRole) => (req, res, next) => {
-    if (req.userData.role === requiredRole) {
-      next();
-    } else {
-      res.status(403).json({ error: 'Access denied' });
+    
+    const user = req.userData; 
+
+    if (user.role !== requiredRole) {
+      res.status(403).json({ error: 'No tienes permiso para acceder a esta ruta' });
+      return;
     }
+
+    next();
   };  
 
 module.exports = {
