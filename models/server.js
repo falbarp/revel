@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const { dbConnection } = require('../db/config');
 
 class Server {
 
@@ -12,24 +13,29 @@ class Server {
         this.usersPath = '/api/users';
         this.productsPath = '/api/products';
      
-
+        this.connectDB();
 
         this.middlewares();
-
 
         this.routes();
     }
 
+    async connectDB() {
+        await dbConnection();
+    }
+
     middlewares() {
         
-        this.app.use( cors());
+        this.app.use( cors() );
+
+        this.app.use( express.json() );
      
         this.app.use( express.static('public') );
 
     }
 
     routes() {
-        
+
         this.app.use( this.signupPath , require('../routes/signup'));
         this.app.use( this.loginPath , require('../routes/login'));
         this.app.use( this.usersPath , require('../routes/user'));
