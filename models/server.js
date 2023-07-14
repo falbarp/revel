@@ -19,6 +19,7 @@ class Server {
         this.loginPath = '/api/login';
         this.usersPath = '/api/users';
         this.productsPath = '/api/products';
+        this.seedPath = '/api/seed';
      
         this.connectDB();
 
@@ -47,13 +48,14 @@ class Server {
         this.app.use( this.loginPath , require('../routes/login'));
         this.app.use( this.usersPath , require('../routes/user'));
         this.app.use( this.productsPath, require('../routes/product'));
+        this.app.use( this.seedPath, require('../routes/seed'));
        
     }
 
     listen() {
         const options = {
-            key: fs.readFileSync('server.key'),
-            cert: fs.readFileSync('server.cert')
+            key: fs.readFileSync('./ssl/server.key'),
+            cert: fs.readFileSync('./ssl/server.cert')
           };
         
         https.createServer(options, this.app).listen( this.port, () => {
