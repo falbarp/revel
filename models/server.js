@@ -49,6 +49,8 @@ class Server {
         this.app.use( this.usersPath , require('../routes/user'));
         this.app.use( this.productsPath, require('../routes/product'));
         this.app.use( this.seedPath, require('../routes/seed'));
+        this.app.use('*', (req, res) => res.status(404).send("Sorry! This is the spooky 404 error not found! :("));
+
        
     }
 

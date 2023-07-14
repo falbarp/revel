@@ -1,187 +1,163 @@
-const { response } = require('express');
+const { userGet, userPut, userRolePut, userDelete } = require('./user');
 const User = require('../models/user');
+const bcrypt = require('bcryptjs');
 
 jest.mock('../models/user');
+jest.mock('bcryptjs');
 
-const {
-  userGet,
-  userPut,
-  userRolePut,
-  userDelete
-} = require('./user');
+describe('User Controller', () => {
+  let req;
+  let res;
+  let next;
 
-describe('userGet', () => {
-  test('should return a list of users', async () => {
-
-    const mockedUsers = [
-      {name: 'User 1', email:"email1@email.com ", role: 'user'},
-      {name: 'User 2', email:"email2@email.com ", role: 'user'}
-    ];
-    
-    User.find.mockResolvedValueOnce(mockedUsers);
-    
-    const req = {};
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
+  beforeEach(() => {
+    req = {
+      params: {},
+      body: {},
+      userData: {}
     };
-    
-    await userGet(req, res);
-    
-    expect(res.status).toHaveBeenCalledWith(200);
-
-    expect(res.json).toHaveBeenCalledWith({ users: mockedUsers });
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
+    next = jest.fn();
   });
 
-  test('should return an error message on failure', async () => {
-  
-    User.find.mockRejectedValueOnce(new Error('Error in the database'));
-
-    const req = {};
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
-
-    await userGet(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    
-    expect(res.json).toHaveBeenCalledWith({ error: 'Error getting users' });
-  });
-});
-
-describe('userPut', () => {
-  test('should return a success message', () => {
-
-    const req = {};
-    const res = {
-      json: jest.fn(),
-    };
-
-    userPut(req, res);
-
-    expect(res.json).toHaveBeenCalledWith({ msg: 'put API - controller' });
-  });
-});
-
-describe('userRolePut', () => {
-  test('should update the role of an existing user', async () => {
-
-    const userId = '123456789';
-    const role = 'admin';
-    
-    const mockedUser = {
-      _id: userId,
-      role: 'user',
-      save: jest.fn(), 
-    };
-    User.findById.mockResolvedValueOnce(mockedUser);
-  
-    const req = {
-      params: { userId },
-      body: { role },
-    };
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
-    
-    await userRolePut(req, res);
-
-    expect(User.findById).toHaveBeenCalledWith(userId);
-
-    expect(mockedUser.role).toBe(role);
-
-    expect(mockedUser.save).toHaveBeenCalled();
-
-    expect(res.status).toHaveBeenCalledWith(200);
-
-    expect(res.json).toHaveBeenCalledWith({ message: 'Role updated successfully' });
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
-  test('should return an error message if user is not found', async () => {
+  describe('userGet', () => {
+    it('should return all users', async () => {
+      const users = [{ name: 'John' }, { name: 'Jane' }];
+      User.find.mockResolvedValue(users);
 
-    User.findById.mockResolvedValueOnce(null);
+      await userGet(req, res, next);
 
-    const req = {
-      params: { userId: '123456789' },
-      body: { role: 'admin' },
-    };
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ users });
+    });
 
-    await userRolePut(req, res);
- 
-    expect(res.status).toHaveBeenCalledWith(404);
+    it('should return an error if something goes wrong', async () => {
+      User.find.mockRejectedValue(new Error());
 
-    expect(res.json).toHaveBeenCalledWith({ error: 'User not found' });
+      await userGet(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Error getting users' });
+    });
   });
 
-  test('should return an error message on failure', async () => {
-  
-    User.findById.mockRejectedValueOnce(new Error('Error in the database'));
-    
-    const req = {
-      params: { userId: '123456789' },
-      body: { role: 'admin' },
-    };
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
-    
-    await userRolePut(req, res);
+  describe('userPut', () => {
+    it('should update the user if authenticated', async () => {
+      req.params.userId = '123';
+      req.userData.userId = '123';
+      req.body.name = 'John';
+      const updatedUser = { name: 'John' };
+      User.findByIdAndUpdate.mockResolvedValue(updatedUser);
 
-    expect(res.status).toHaveBeenCalledWith(500);
+      await userPut(req, res, next);
 
-    expect(res.json).toHaveBeenCalledWith({ error: 'Error updating role' });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ user: updatedUser });
+    });
+
+    it('should not update the user if not authenticated', async () => {
+      req.params.userId = '123';
+      req.userData.userId = '456';
+
+      await userPut(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Not authorized' });
+    });
+
+    it('should hash the password if provided', async () => {
+      req.params.userId = '123';
+      req.userData.userId = '123';
+      req.body.password = 'password';
+      const hashedPassword = 'hashedPassword';
+      bcrypt.hash.mockResolvedValue(hashedPassword);
+      const updatedUser = { password: hashedPassword };
+      User.findByIdAndUpdate.mockResolvedValue(updatedUser);
+
+      await userPut(req, res, next);
+
+      expect(bcrypt.hash).toHaveBeenCalledWith(req.body.password, 10);
+      expect(User.findByIdAndUpdate).toHaveBeenCalledWith(
+        req.params.userId,
+        { password: hashedPassword },
+        { new: true }
+      );
+    });
+
+    it('should return an error if something goes wrong', async () => {
+        req.params.userId = '123';
+        req.userData.userId = '123';
+        User.findByIdAndUpdate.mockRejectedValue(new Error());
+
+        await userPut(req, res, next);
+
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.json).toHaveBeenCalledWith({ error: 'Error updating user' });
+    });
   });
-});
 
-describe('userDelete', () => {
-  test('should delete an existing user', async () => {
+  describe('userRolePut', () => {
+    it('should update the role of the user if found', async () => {
+        req.params.userId = '123';
+        req.body.role = 'admin';
+        const user = { save: jest.fn() };
+        User.findById.mockResolvedValue(user);
 
-    const req = {
-      params: { userId: '123456789' },
-    };
-    
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
+        await userRolePut(req, res, next);
 
-    User.findByIdAndDelete.mockResolvedValueOnce();
+        expect(user.role).toBe(req.body.role);
+        expect(user.save).toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith({ message: 'Role updated successfully' });
+    });
 
-    await userDelete(req, res);
-  
-    expect(User.findByIdAndDelete).toHaveBeenCalledWith(req.params.userId);
+    it('should return an error if the user is not found', async () => {
+        req.params.userId = '123';
+        User.findById.mockResolvedValue(null);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    
-    expect(res.json).toHaveBeenCalledWith({ message: 'User deleted successfully' });
+        await userRolePut(req, res, next);
+
+        expect(res.status).toHaveBeenCalledWith(404);
+        expect(res.json).toHaveBeenCalledWith({ error: 'User not found' });
+    });
+
+    it('should return an error if something goes wrong', async () => {
+        req.params.userId = '123';
+        User.findById.mockRejectedValue(new Error());
+
+        await userRolePut(req, res, next);
+
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.json).toHaveBeenCalledWith({ error: 'Error updating role' });
+    });
   });
 
-  test('should return an error message on failure', async () => {
+  describe('userDelete', () => {
+    it('should delete the user if found', async () => {
+        req.params.userId = '123';
 
-    User.findByIdAndDelete.mockRejectedValueOnce(new Error('Error in the database'));
-    
+        await userDelete(req, res, next);
 
-    const req = {
-      params: { userId: '123456789' },
-    };
+        expect(User.findByIdAndDelete).toHaveBeenCalledWith(req.params.userId);
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith({ message: 'User deleted successfully' });
+    });
 
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
+    it('should return an error if something goes wrong', async () => {
+        req.params.userId = '123';
+        User.findByIdAndDelete.mockRejectedValue(new Error());
 
-    await userDelete(req, res);
+        await userDelete(req, res, next);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-
-    expect(res.json).toHaveBeenCalledWith({ error: 'Error deleting user' });
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.json).toHaveBeenCalledWith({ error: 'Error deleting user' });
+    });
   });
 });
