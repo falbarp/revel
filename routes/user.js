@@ -18,7 +18,13 @@ router.put('/roles/:userId', [
     authorizeUser('admin')
 ], userRolePut);
 
-router.put('/:userId', userPut);
+router.put('/:userId', [
+    check('name', 'Name is required').not().isEmpty().optional(),
+    check('email', 'A valid Email is required').isEmail().optional(),
+    check('password', 'Password is required and must be at least 6 characters').isLength({ min: 6 }).optional(),
+    validateFields,
+    authenticateUser
+],userPut);
 
 router.delete('/:userId', [
     authenticateUser,
