@@ -20,5 +20,12 @@ const userSchema = new mongoose.Schema({
     default: 'user' }
 });
 
+
+// Remove password and version when returning user
+userSchema.methods.toJSON = function() {
+  const { __v, password, ...user } = this.toObject();
+  return user;
+}
+
 module.exports = mongoose.model('User', userSchema);
 
